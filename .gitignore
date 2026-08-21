@@ -1,2 +1,4 @@
 node_modules/
 tasks.db
+.env
+assignment_3/data/
