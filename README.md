@@ -11,7 +11,7 @@ Welcome to my backend development portfolio. This repository contains projects b
 
 | Assignment | Project Name | Description | Status |
 | :---: | :--- | :--- | :---: |
-| **1** | [Task CRUD API](./assignment-1) | An in-memory RESTful API with full CRUD operations, input validation, and interactive Swagger UI documentation. | ✅ Completed |
+| **1** | [Task CRUD API](./assignment_1) | An in-memory RESTful API with full CRUD operations, input validation, and interactive Swagger UI documentation. | ✅ Completed |
 
 *(Future assignments will be added to this directory as they are completed.)*
 
