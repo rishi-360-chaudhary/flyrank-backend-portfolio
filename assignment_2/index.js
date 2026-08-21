@@ -40,3 +40,30 @@ app.post('/tasks', (req, res) => {
     const newTask = db.prepare('SELECT * FROM tasks WHERE id = ?').get(info.lastInsertRowid);
     res.status(201).json(newTask);
 });
+
+app.put('/tasks/:id', (req, res) => {
+    const { title, done } = req.body;
+    if (title !== undefined && title.trim() === "") return res.status(400).json({ error: "Title cannot be empty" });
+    const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(req.params.id);
+    if (!task) return res.status(404).json({ error: "Task not found" });
+    
+    const updatedTitle = title !== undefined ? title : task.title;
+    const updatedDone = done !== undefined ? (done ? 1 : 0) : task.done;
+    db.prepare('UPDATE tasks SET title = ?, done = ? WHERE id = ?').run(updatedTitle, updatedDone, req.params.id);
+    const updatedTask = db.prepare('SELECT * FROM tasks WHERE id = ?').get(req.params.id);
+    res.status(200).json(updatedTask);
+});
+
+app.delete('/tasks/:id', (req, res) => {
+    const info = db.prepare('DELETE FROM tasks WHERE id = ?').run(req.params.id);
+    if (info.changes === 0) return res.status(404).json({ error: "Task not found" });
+    res.status(204).send();
+});
+
+const swaggerUi = require('swagger-ui-express');
+const openapiSpec = require('./openapi.json');
+app.use('/docs', swaggerUi.serve, swaggerUi.setup(openapiSpec));
+
+app.listen(3000, () => {
+    console.log('Server running on http://localhost:3000');
+});
