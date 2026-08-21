@@ -1,0 +1,19 @@
+{
+  "name": "assignment_3",
+  "version": "1.0.0",
+  "description": "Containerized task CRUD API (SQLite, approved by instructor as an alternative to Postgres)",
+  "main": "index.js",
+  "scripts": {
+    "start": "node --env-file=.env index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "better-sqlite3": "^13.0.3",
+    "express": "^5.2.1",
+    "swagger-ui-express": "^5.0.1"
+  }
+}
