@@ -22,3 +22,13 @@ if (rowCount === 0) {
     });
     seed();
 }
+
+app.get('/tasks', (req, res) => {
+    const tasks = db.prepare('SELECT * FROM tasks').all();
+    res.status(200).json(tasks);
+});
+app.get('/tasks/:id', (req, res) => {
+    const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(req.params.id);
+    if (!task) return res.status(404).json({ error: "Task not found" });
+    res.status(200).json(task);
+});
