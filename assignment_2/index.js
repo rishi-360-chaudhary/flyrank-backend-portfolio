@@ -32,3 +32,11 @@ app.get('/tasks/:id', (req, res) => {
     if (!task) return res.status(404).json({ error: "Task not found" });
     res.status(200).json(task);
 });
+
+app.post('/tasks', (req, res) => {
+    const { title } = req.body;
+    if (!title || title.trim() === "") return res.status(400).json({ error: "Title is required" });
+    const info = db.prepare('INSERT INTO tasks (title, done) VALUES (?, ?)').run(title, 0);
+    const newTask = db.prepare('SELECT * FROM tasks WHERE id = ?').get(info.lastInsertRowid);
+    res.status(201).json(newTask);
+});
