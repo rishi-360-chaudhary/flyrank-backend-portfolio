@@ -48,3 +48,15 @@ curl -i -X POST http://localhost:3000/triage \
   -H "Content-Type: application/json" \
   -d '{}'
 ```
+
+## Stage 2 observations
+
+Tested three real inputs against the model:
+- A clear billing complaint → correctly classified `billing`, high urgency, 0.98 confidence.
+- A clear bug report → correctly classified `bug`, high urgency, 0.98 confidence.
+- An ambiguous greeting ("hello is anyone there") → correctly classified `other`,
+  confidence 0.4 — below the 0.5 threshold specified in the prompt's "when unsure" rule,
+  exactly as intended.
+
+Free-tier rate limiting (429s) on OpenRouter's shared pool was the main friction point
+during testing — resolved by waiting between retries rather than switching models mid-build.
