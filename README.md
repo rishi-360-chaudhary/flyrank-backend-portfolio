@@ -3,7 +3,7 @@
 Welcome to my backend development portfolio. This repository contains projects built during the FlyRank Internship Backend Track, demonstrating server-side application development, API design, and clean code practices.
 
 **Developer:** Rishi Chaudhary | IIT Roorkee  
-**Primary Tech Stack:** JavaScript, Node.js, Express, REST APIs, SQLite, Docker, Supabase Auth  
+**Primary Tech Stack:** JavaScript, Node.js, Express, REST APIs, SQLite, Docker, Supabase Auth, LLM Integration (OpenRouter)  
 
 ---
 
@@ -15,6 +15,7 @@ Welcome to my backend development portfolio. This repository contains projects b
 | **2** | [Database-Backed CRUD API](./assignment_2) | Migrated the storage layer to a real SQLite database ensuring data persistence, implementing parameterized SQL queries, and utilizing DB Browser. | ✅ Completed |
 | **3** | [Containerize Your Stack](./assignment_3) | Containerized the task API and SQLite database with Docker — named volume for persistence, `.env` for config, `docker compose up` as a single start command. | ✅ Completed |
 | **4** | [Auth — Login & Protect](./assignment_4) | Built a secure API using Supabase Auth — signup/login/logout, JWT verification, and a reusable middleware guarding protected routes, documented with Swagger bearer auth. | ✅ Completed |
+| **5** | [Put an LLM behind your API](./assignment_5) | Added an LLM-backed `/triage` endpoint using OpenRouter — schema validation, parse/repair/quarantine, timeout + retry with backoff, cost logging, kill switch, and an 8-case eval (7/8 correct). | ✅ Completed |
 
 *(Future assignments will be added to this directory as they are completed.)*
 
@@ -25,6 +26,7 @@ Welcome to my backend development portfolio. This repository contains projects b
 *   **Database Integration:** Setting up SQLite, writing raw SQL queries, and ensuring data persistence across server restarts.
 *   **Containerization:** Dockerfiles, Docker Compose, named volumes for persistent storage, and `.env`-based configuration.
 *   **Authentication & Security:** Identity-provider-based auth (Supabase), JWT verification, reusable auth middleware, and bearer-token-protected routes.
+*   **LLM Integration:** Prompt-as-versioned-spec, schema-validated model output with repair retries, timeout/backoff retry policies, cost logging, and kill switches for production AI features.
 *   **Security:** Utilizing parameterized queries to prevent SQL injection attacks, keeping secrets out of version control.
 *   **Data Validation:** Ensuring reliable server inputs and returning standardized JSON error responses.
 *   **Documentation:** Implementing OpenAPI specifications and Swagger UI for interactive testing.
