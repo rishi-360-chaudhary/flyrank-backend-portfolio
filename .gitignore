@@ -2,3 +2,4 @@ node_modules/
 tasks.db
 .env
 assignment_3/data/
+assignment_5/logs/

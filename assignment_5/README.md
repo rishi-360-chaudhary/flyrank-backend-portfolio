@@ -60,3 +60,16 @@ Tested three real inputs against the model:
 
 Free-tier rate limiting (429s) on OpenRouter's shared pool was the main friction point
 during testing — resolved by waiting between retries rather than switching models mid-build.
+
+## Stage 3 — trustworthy output
+
+Model output is parsed, stripped of markdown code fences if present, and validated
+against the Zod schema before anything is returned. On validation failure, exactly
+one repair call is made (the model receives its own broken output plus the specific
+error and is asked to correct it). If the repair also fails, the request is logged to
+`logs/quarantine.jsonl` (input, raw output, error, prompt version) and the endpoint
+returns a clean `422` — raw model text is never returned to the caller.
+
+Tested by temporarily forcing the prompt to demand an invalid category outside the
+schema's enum. Result: one repair attempt, still invalid (the model correctly followed
+the broken instruction), quarantined, and a clean `422` returned — no crash.

@@ -46,21 +46,78 @@ app.post('/triage', async (req, res) => {
         return res.status(200).json(stubResponse);
     }
 
-    // Stage 2: real model call 
+    try {
+        const rawText = await callModel(text);
+        const parsed = parseAndValidate(rawText);
+
+        if (parsed.success) {
+            return res.status(200).json(parsed.data);
+        }
+
+        const repairInstruction = `Your previous answer was rejected for this reason: ${parsed.error}\n\nYour previous answer was: ${rawText}\n\nReturn only corrected JSON matching the schema.`;
+        const repairedText = await callModel(text, repairInstruction);
+        const repairedParsed = parseAndValidate(repairedText);
+
+        if (repairedParsed.success) {
+            return res.status(200).json(repairedParsed.data);
+        }
+
+        logQuarantine(text, repairedText, repairedParsed.error);
+        return res.status(422).json({ error: 'Could not get a valid answer from the model after one repair attempt' });
+
+    } catch (err) {
+        console.log('MODEL CALL FAILED:', err.status, err.message);
+        return res.status(503).json({ error: 'Model temporarily unavailable, try again shortly' });
+    }
+});
+
+async function callModel(userText, repairInstruction = null) {
+    const messages = [{ role: 'system', content: systemPrompt }];
+    messages.push({ role: 'user', content: userText });
+
+    if (repairInstruction) {
+        messages.push({ role: 'user', content: repairInstruction });
+    }
+
     const completion = await client.chat.completions.create({
         model: process.env.LLM_MODEL,
         temperature: 0.2,
-        messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: text }
-        ]
+        messages
     });
 
-    const rawText = completion.choices[0].message.content;
-    console.log('RAW MODEL OUTPUT:', rawText); 
+    return completion.choices[0].message.content;
+}
 
-    res.status(200).json({ raw: rawText }); 
-});
+function parseAndValidate(rawText) {
+    let cleaned = rawText.trim();
+    cleaned = cleaned.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/, '').trim();
+
+    let jsonObj;
+    try {
+        jsonObj = JSON.parse(cleaned);
+    } catch (e) {
+        return { success: false, error: `Not valid JSON: ${e.message}` };
+    }
+
+    const result = triageSchema.safeParse(jsonObj);
+    if (!result.success) {
+        return { success: false, error: result.error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join('; ') };
+    }
+
+    return { success: true, data: result.data };
+}
+
+function logQuarantine(input, rawOutput, error) {
+    const line = JSON.stringify({
+        timestamp: new Date().toISOString(),
+        input,
+        rawOutput,
+        error,
+        promptVersion: 'triage-v1'
+    }) + '\n';
+
+    fs.appendFileSync(path.join(__dirname, 'logs', 'quarantine.jsonl'), line);
+}
 
 app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
