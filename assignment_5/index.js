@@ -13,6 +13,8 @@ const PORT = process.env.PORT || 3000;
 const client = new OpenAI({
     baseURL: process.env.LLM_BASE_URL,
     apiKey: process.env.LLM_API_KEY,
+    timeout: 30000, 
+    maxRetries: 0,
 });
 
 const systemPrompt = fs.readFileSync(
@@ -46,7 +48,12 @@ app.post('/triage', async (req, res) => {
         return res.status(200).json(stubResponse);
     }
 
+    if (process.env.LLM_ENABLED && process.env.LLM_ENABLED.trim() === 'false') {
+        return res.status(503).json({ error: 'AI triage is temporarily disabled' });
+    }
+
     try {
+        let repairCount = 0;
         const rawText = await callModel(text);
         const parsed = parseAndValidate(rawText);
 
@@ -54,6 +61,7 @@ app.post('/triage', async (req, res) => {
             return res.status(200).json(parsed.data);
         }
 
+        repairCount = 1;
         const repairInstruction = `Your previous answer was rejected for this reason: ${parsed.error}\n\nYour previous answer was: ${rawText}\n\nReturn only corrected JSON matching the schema.`;
         const repairedText = await callModel(text, repairInstruction);
         const repairedParsed = parseAndValidate(repairedText);
@@ -66,6 +74,9 @@ app.post('/triage', async (req, res) => {
         return res.status(422).json({ error: 'Could not get a valid answer from the model after one repair attempt' });
 
     } catch (err) {
+        if (err.status === 408 || err.message?.includes('timeout')) {
+            return res.status(504).json({ error: 'Model call timed out' });
+        }
         console.log('MODEL CALL FAILED:', err.status, err.message);
         return res.status(503).json({ error: 'Model temporarily unavailable, try again shortly' });
     }
@@ -79,13 +90,55 @@ async function callModel(userText, repairInstruction = null) {
         messages.push({ role: 'user', content: repairInstruction });
     }
 
-    const completion = await client.chat.completions.create({
-        model: process.env.LLM_MODEL,
-        temperature: 0.2,
-        messages
-    });
+    return await callWithRetry(messages);
+}
 
-    return completion.choices[0].message.content;
+async function callWithRetry(messages, maxAttempts = 3) {
+    let lastError;
+
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        const startTime = Date.now();
+        try {
+            const completion = await client.chat.completions.create({
+                model: process.env.LLM_MODEL,
+                temperature: 0.2,
+                messages
+            });
+
+            const durationMs = Date.now() - startTime;
+            logCost(completion, durationMs, attempt);
+
+            return completion.choices[0].message.content;
+
+        } catch (err) {
+            lastError = err;
+            const status = err.status;
+            const retryable = status === 429 || status === 408 || (status >= 500 && status < 600);
+
+            if (!retryable || attempt === maxAttempts - 1) {
+                throw err;
+            }
+
+            const retryAfterHeader = err.headers?.['retry-after'];
+            let waitMs;
+            if (retryAfterHeader) {
+                waitMs = parseInt(retryAfterHeader, 10) * 1000;
+            } else {
+                const baseDelay = Math.pow(2, attempt) * 1000; 
+                const jitter = Math.random() * 500;
+                waitMs = baseDelay + jitter;
+            }
+
+            console.log(`Retry ${attempt + 1}/${maxAttempts} after ${status} error, waiting ${Math.round(waitMs)}ms`);
+            await sleep(waitMs);
+        }
+    }
+
+    throw lastError;
+}
+
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 function parseAndValidate(rawText) {
@@ -117,6 +170,21 @@ function logQuarantine(input, rawOutput, error) {
     }) + '\n';
 
     fs.appendFileSync(path.join(__dirname, 'logs', 'quarantine.jsonl'), line);
+}
+
+function logCost(completion, durationMs, retryAttempt) {
+    const usage = completion.usage || {};
+    const line = JSON.stringify({
+        timestamp: new Date().toISOString(),
+        promptVersion: 'triage-v1',
+        model: process.env.LLM_MODEL,
+        inputTokens: usage.prompt_tokens ?? null,
+        outputTokens: usage.completion_tokens ?? null,
+        durationMs,
+        retryAttempt
+    });
+    console.log('COST LOG:', line);
+    fs.appendFileSync(path.join(__dirname, 'logs', 'cost.jsonl'), line + '\n');
 }
 
 app.listen(PORT, () => {

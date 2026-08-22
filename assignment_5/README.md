@@ -73,3 +73,21 @@ returns a clean `422` — raw model text is never returned to the caller.
 Tested by temporarily forcing the prompt to demand an invalid category outside the
 schema's enum. Result: one repair attempt, still invalid (the model correctly followed
 the broken instruction), quarantined, and a clean `422` returned — no crash.
+
+## Stage 4 — production-ready
+
+- Explicit 30-second timeout on the client (overriding the SDK's 10-minute default).
+- Retries only on timeout, 429, and 5xx — never on 400/401/403. Exponential backoff
+  with jitter (1s, 2s, 4s), respecting `Retry-After` if the provider sends one.
+- The SDK's own automatic retries were disabled (`maxRetries: 0`) so the custom
+  retry logic above is the only retry path — no silent double-retrying.
+- Every successful call logs prompt version, model, input/output tokens, duration,
+  and retry count to `logs/cost.jsonl`.
+- `LLM_ENABLED=false` skips the model entirely and returns a clean `503` — verified:
+  zero model calls logged while the switch is on.
+
+**Real-world stress test:** during development, OpenRouter's free shared pool for the
+chosen model was frequently rate-limited. The retry logic was observed automatically
+attempting 3 requests with increasing backoff delays before surfacing a final error —
+exactly the intended behavior under sustained upstream congestion, rather than failing
+on the first `429`.
