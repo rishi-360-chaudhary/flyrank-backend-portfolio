@@ -91,3 +91,31 @@ chosen model was frequently rate-limited. The retry logic was observed automatic
 attempting 3 requests with increasing backoff delays before surfacing a final error —
 exactly the intended behavior under sustained upstream congestion, rather than failing
 on the first `429`.
+
+## Eval results
+
+**Score: 7/8 (87.5%)** — run on 2026-08-22, prompt version `triage-v1`.
+
+7 of 8 hand-labeled test cases returned the correct category. The one failure
+(`"asdkfjaslkdfj random gibberish text 12345"`) was an infrastructure failure
+(`503`, OpenRouter free-tier rate limiting) rather than a wrong classification —
+the model was never successfully queried for that case within the retry budget.
+
+See `evals/cases.json` for all 8 cases and `evals/run-eval.js` for the runner.
+
+## Cost per call
+
+One typical call to `google/gemma-4-31b-it:free` (a free model — $0 per token) used
+roughly 250-400 input tokens (system prompt + message) and 50-80 output tokens,
+completing in under 2 seconds under normal (non-rate-limited) conditions.
+At scale on a paid model of similar size, this would translate to a small fraction
+of a cent per request — the real cost driver at 10,000 requests/day would be
+picking a paid model tier, not this endpoint's token usage itself.
+
+## What I'd fix with another day
+
+The biggest friction wasn't the code — it was OpenRouter's shared free-tier pool
+being inconsistently available for the chosen model during development and eval
+runs. With more time, I'd add a fallback model list (try model A, fall back to
+model B on repeated 429s) so the endpoint degrades gracefully instead of depending
+on a single free model's availability.

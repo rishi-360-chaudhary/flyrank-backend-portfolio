@@ -1,0 +1,34 @@
+[
+  {
+    "input": "I was charged twice for my subscription this month, please refund one charge.",
+    "expected_category": "billing"
+  },
+  {
+    "input": "The app crashes every time I try to upload a file.",
+    "expected_category": "bug"
+  },
+  {
+    "input": "It would be great if you added a dark mode option to the settings.",
+    "expected_category": "feature"
+  },
+  {
+    "input": "My invoice shows a charge from last year that I don't recognize.",
+    "expected_category": "billing"
+  },
+  {
+    "input": "The search bar returns no results even for common terms.",
+    "expected_category": "bug"
+  },
+  {
+    "input": "Could you add support for exporting data as a CSV file?",
+    "expected_category": "feature"
+  },
+  {
+    "input": "hello is anyone there",
+    "expected_category": "other"
+  },
+  {
+    "input": "asdkfjaslkdfj random gibberish text 12345",
+    "expected_category": "other"
+  }
+]
