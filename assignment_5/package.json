@@ -1,0 +1,19 @@
+{
+  "name": "assignment_5",
+  "version": "1.0.0",
+  "description": "LLM-backed support message triage endpoint",
+  "main": "index.js",
+  "scripts": {
+    "start": "node --env-file=.env index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "express": "^5.2.1",
+    "openai": "^4.60.0",
+    "zod": "^3.23.8"
+  }
+}
