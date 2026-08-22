@@ -14,6 +14,10 @@ if (!SUPABASE_URL || !SUPABASE_KEY) {
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
+const swaggerUi = require('swagger-ui-express');
+const openapiSpec = require('./openapi.json');
+app.use('/docs', swaggerUi.serve, swaggerUi.setup(openapiSpec));
+
 // Stage 4: Reusable auth middleware (the guard) 
 
 async function requireAuth(req, res, next) {
