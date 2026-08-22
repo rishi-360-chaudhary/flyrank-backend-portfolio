@@ -160,6 +160,8 @@ function parseAndValidate(rawText) {
     return { success: true, data: result.data };
 }
 
+fs.mkdirSync(path.join(__dirname, 'logs'), { recursive: true });
+
 function logQuarantine(input, rawOutput, error) {
     const line = JSON.stringify({
         timestamp: new Date().toISOString(),
